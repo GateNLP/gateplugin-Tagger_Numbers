@@ -25,6 +25,7 @@ import gate.creole.AbstractLanguageAnalyser;
 import gate.creole.ExecutionException;
 import gate.creole.ExecutionInterruptedException;
 import gate.creole.ResourceInstantiationException;
+import gate.creole.ResourceReference;
 import gate.creole.metadata.CreoleParameter;
 import gate.creole.metadata.CreoleResource;
 import gate.creole.metadata.Optional;
@@ -35,6 +36,7 @@ import gate.util.BomStrippingInputStreamReader;
 import gate.util.InvalidOffsetException;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -84,9 +86,9 @@ public class NumbersTagger extends AbstractLanguageAnalyser implements ActionsPu
 
   private transient Config config;
 
-  private URL configURL;
+  private ResourceReference configURL;
 
-  private URL postProcessURL;
+  private ResourceReference postProcessURL;
 
   private LanguageAnalyser jape;
 
@@ -162,22 +164,40 @@ public class NumbersTagger extends AbstractLanguageAnalyser implements ActionsPu
     this.annotationSetName = outputAnnotationSetName;
   }
 
-  public URL getConfigURL() {
+  public ResourceReference getConfigURL() {
     return configURL;
   }
 
   @CreoleParameter(defaultValue = "resources/languages/all.xml", suffixes = ".xml")
-  public void setConfigURL(URL url) {
+  public void setConfigURL(ResourceReference url) {
     configURL = url;
   }
+  
+  @Deprecated
+  public void setConfigURL(URL url) {
+    try {
+      this.setConfigURL(new ResourceReference(url));
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Error converting URL to ResourceReference", e);
+    }
+  }
 
-  public URL getPostProcessURL() {
+  public ResourceReference getPostProcessURL() {
     return postProcessURL;
   }
 
   @CreoleParameter(defaultValue = "resources/jape/post-process.jape", suffixes = ".jape")
-  public void setPostProcessURL(URL url) {
+  public void setPostProcessURL(ResourceReference url) {
     postProcessURL = url;
+  }
+  
+  @Deprecated
+  public void setPostProcessURL(URL url) {
+    try {
+      this.setPostProcessURL(new ResourceReference(url));
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Error converting URL to ResourceReference", e);
+    }
   }
 
   @CreoleParameter(defaultValue = "UTF-8")
@@ -531,7 +551,7 @@ public class NumbersTagger extends AbstractLanguageAnalyser implements ActionsPu
 
     try {
       // attempt to load the configuration from the supplied URL
-      XStream xstream = Config.getXStream(configURL, getClass()
+      XStream xstream = Config.getXStream(configURL.toURL(), getClass()
               .getClassLoader());
       BomStrippingInputStreamReader in = new BomStrippingInputStreamReader(
               configURL.openStream(), encoding);
